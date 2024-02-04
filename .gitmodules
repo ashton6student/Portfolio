@@ -1,0 +1,3 @@
+[submodule "BitwiseCalculator/8BitBitwiseCalculator"]
+	path = BitwiseCalculator/8BitBitwiseCalculator
+	url = https://github.com/ashton6student/ECE385Lab2.2.git
