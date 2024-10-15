@@ -1,0 +1,2 @@
+In this lab, we implemented the band pass filter (BPF), BPF amplifier, envelope detector, and audio amplifier of a superheterodyne AM reciever. The implementation was done on a breadboard, then tested in lab using oscilliscopes, function generators, and digital multimeters.
+An image of our breadboard implementation is included in this folder. Refer to the included lab report if you desire more details on how we tested our receiver.

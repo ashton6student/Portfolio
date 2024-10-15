@@ -1,0 +1,2 @@
+For this project, I hooked up a RaspberryPi to my Ender 3 v2 3D printer in order to connect it to OctoPi, a SD card image of OctoPrint running on the Raspberry Pi. This allowed for remote connection to my 3D printer anywhere with an internet connection, allowing for remote printing and monitoring through a Raspberry Pi camera.
+Images of printer setup are included in this folder, as well as images of the webpage showing my remote access to this printer.

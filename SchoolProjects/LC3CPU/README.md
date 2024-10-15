@@ -1,0 +1,2 @@
+In this lab, we implemented the RISC SLC-3 processor in SystemVerilog. We were only given the FSM (the control block in the block diagram) having to design the register file, ALU, PCMUX, NZP block and logic, IR, and more (See the block diagram for a higher-level view of what we implemented. See the lab report for a more detailed breakdown of each component). 
+After we implemented the processor, we then validated it with a testbench in simulation, then tested it after implementation with given assembly programs.
