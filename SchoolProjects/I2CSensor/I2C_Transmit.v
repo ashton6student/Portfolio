@@ -13,18 +13,20 @@ module I2C_Transmit(
     output reg SCL,
     output reg SDA,
     output reg [7:0] State,
+    input wire [31:0] from_PC_sim,
     output wire [31:0] from_PC,
     input  wire    [4:0] okUH,
     output wire    [2:0] okHU,
     inout  wire    [31:0] okUHU,   
     inout wire okAA,
     output wire [31:0] data1,
-    output wire [31:0] data2     
+    output wire [31:0] data2,
+    output reg [15:0] byteCountReg     
     );
     
     // Instantiate the ClockGenerator module, where three signals are generated:
     // High speed CLK signal, Low speed FSM_Clk signal     
-    wire [23:0] ClkDivThreshold = 1;   
+    wire [23:0] ClkDivThreshold = 100;   
     wire FSM_Clk, ILA_Clk; 
     
     ClockGenerator ClockGenerator1 (  .sys_clkn(sys_clkn),
@@ -32,26 +34,33 @@ module I2C_Transmit(
                                       .ClkDivThreshold(ClkDivThreshold),
                                       .FSM_Clk(FSM_Clk),                                      
                                       .ILA_Clk(ILA_Clk) );
-    // Data 
-    wire PC_START = from_PC[31];                        
-    wire [6:0] SAD = from_PC[30:24];
-    wire [7:0] SUB = from_PC[23:16];
-    wire [15:0] BYTE_COUNT = from_PC[15:0];
-    
+    // Data
+    wire PC_START = from_PC[31];
+    wire RW = from_PC[30];                        
+    wire [6:0] SAD = from_PC[29:23];
+    wire [7:0] SUB = from_PC[22:15];
+    wire [7:0] WRITE_DATA = from_PC[14:7];
+    wire [15:0] BYTE_COUNT = from_PC[6:0];
+        
+    //Just for SIM
+//    wire PC_START = from_PC_sim[31];
+//    wire RW = from_PC_sim[30];                        
+//    wire [6:0] SAD = from_PC_sim[29:23];
+//    wire [7:0] SUB = from_PC_sim[22:15];
+//    wire [7:0] WRITE_DATA = from_PC_sim[14:7];
+//    wire [15:0] BYTE_COUNT = from_PC_sim[6:0];   
+        
 //    localparam RepeatFlag = 1'b1;
 //    localparam RegisterA = 7'b010_1000;
 //    reg [7:0] SUB = {RepeatFlag, RegisterA};
 
     reg [7:0] counter = 0;
 //    localparam byteCount = 12;
-    reg [7:0] byteCountReg;
+//    reg [15:0] byteCountReg;
     reg [511:0] data = 0;
     
     assign data1 = data[63:32];
     assign data2 = data[31:0];
-    
-    reg [7:0] STOP_CONDITION_1 = 8'd151;
-    reg [7:0] READ_START = 8'd114;
 
     reg [15:0] XaxisReg = 16'b0000_0000_0000_0000;
     reg [15:0] YaxisReg = 16'b0000_0000_0000_0000;
@@ -59,7 +68,13 @@ module I2C_Transmit(
     
     reg error_bit = 1'b1;      
        
-    localparam STATE_INIT = 8'd0;    
+    localparam STATE_INIT = 8'd0;
+    localparam SECOND_START = 8'd75;
+    localparam NACK = 8'd151; 
+    localparam STOP_CONDITION = 8'd155;
+    localparam READ_START = 8'd115;  
+    localparam WRITE_START = 8'd200;
+      
     assign led[7] = ACK_bit;
     assign led[6] = error_bit;
     assign ADT7420_A0 = 1'b0;
@@ -71,8 +86,7 @@ module I2C_Transmit(
         SCL = 1'b1;
         SDA = 1'b1;
         ACK_bit = 1'b1;  
-        State = STATE_INIT;
-        byteCountReg = BYTE_COUNT;    
+        State = STATE_INIT; 
     end
     
     always @(*) begin          
@@ -84,10 +98,12 @@ module I2C_Transmit(
         case (State)
             // Press Button[3] to start the state machine. Otherwise, stay in the STATE_INIT state        
             STATE_INIT: begin
-                 if (PC_START == 1'b1 || simStart == 1'b1)
-                     State <= State + 1;                    
-                 else
+                 if (PC_START == 1'b1 || simStart == 1'b1) begin
+                     State <= State + 1;
+                     byteCountReg <= BYTE_COUNT;                       
+                 end else begin
                      State <= STATE_INIT;
+                 end
             end
             
             // Start condition
@@ -131,10 +147,10 @@ module I2C_Transmit(
             8'd35: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end 
             8'd36: begin SCL <= 1'b1; State <= State + 1; end 
             8'd37: begin SCL <= 1'b1; ACK_bit <= SDA; State <= State + 1; end
+            8'd38: begin SCL <= 1'b0; State <= State + 1; end  
             //**************************************************
             //Transmit Register Address
             //**************************************************  
-            8'd38: begin SCL <= 1'b0; State <= State + 1; end  
             8'd39: begin SCL <= 1'b0; SDA <= SUB[7]; State <= State + 1; end  
             8'd40: begin SCL <= 1'b1; State <= State + 1; end  
             8'd41: begin SCL <= 1'b1; State <= State + 1; end
@@ -169,18 +185,57 @@ module I2C_Transmit(
             8'd70: begin SCL <= 1'b0; State <= State + 1; end
             8'd71: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end  
             8'd72: begin SCL <= 1'b1; State <= State + 1; end
-            8'd73: begin SCL <= 1'b1; ACK_bit <= SDA; State <= State + 1; end
+            8'd73: begin SCL <= 1'b1; ACK_bit <= SDA; State <= 8'd199; end
+            8'd199: begin SCL <= 1'b0; ACK_bit <= SDA; State <= State + 1; if(RW) State <= SECOND_START; else State <= WRITE_START; end
+            //**************************************************
+            //Write Data
+            //**************************************************
+            WRITE_START: begin SCL <= 1'b0; SDA <= WRITE_DATA[7]; State <= State + 1; end    
+            8'd201: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd202: begin SCL <= 1'b1; State <= State + 1; end
+            8'd203: begin SCL <= 1'b0; State <= State + 1; end
+            8'd204: begin SCL <= 1'b0; SDA <= WRITE_DATA[6]; State <= State + 1; end  
+            8'd205: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd206: begin SCL <= 1'b1; State <= State + 1; end
+            8'd207: begin SCL <= 1'b0; State <= State + 1; end
+            8'd208: begin SCL <= 1'b0; SDA <= WRITE_DATA[5]; State <= State + 1; end  
+            8'd209: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd210: begin SCL <= 1'b1; State <= State + 1; end
+            8'd211: begin SCL <= 1'b0; State <= State + 1; end
+            8'd212: begin SCL <= 1'b0; SDA <= WRITE_DATA[4]; State <= State + 1; end  
+            8'd213: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd214: begin SCL <= 1'b1; State <= State + 1; end
+            8'd215: begin SCL <= 1'b0; State <= State + 1; end
+            8'd216: begin SCL <= 1'b0; SDA <= WRITE_DATA[3]; State <= State + 1; end  
+            8'd217: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd218: begin SCL <= 1'b1; State <= State + 1; end
+            8'd219: begin SCL <= 1'b0; State <= State + 1; end
+            8'd220: begin SCL <= 1'b0; SDA <= WRITE_DATA[2]; State <= State + 1; end  
+            8'd221: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd222: begin SCL <= 1'b1; State <= State + 1; end
+            8'd223: begin SCL <= 1'b0; State <= State + 1; end
+            8'd224: begin SCL <= 1'b0; SDA <= WRITE_DATA[1]; State <= State + 1; end  
+            8'd225: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd226: begin SCL <= 1'b1; State <= State + 1; end
+            8'd227: begin SCL <= 1'b0; State <= State + 1; end
+            8'd228: begin SCL <= 1'b0; SDA <= WRITE_DATA[0]; State <= State + 1; end  
+            8'd229: begin SCL <= 1'b1; State <= State + 1; end  
+            8'd230: begin SCL <= 1'b1; State <= State + 1; end
+            8'd231: begin SCL <= 1'b0; State <= State + 1; end
+            8'd232: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end 
+            8'd233: begin SCL <= 1'b1; State <= State + 1; end 
+            8'd234: begin SCL <= 1'b1; ACK_bit <= SDA; State <= State + 1; end
+            8'd235: begin SCL <= 1'b0; State <= STOP_CONDITION; end            
             //**************************************************
             //Second Start Condition
-            //**************************************************
-            8'd74: begin SCL <= 1'b0; State <= State + 1; end      
-            8'd75: begin SCL <= 1'b0; SDA <= 1'b1; State <= State + 1; end  
+            //**************************************************     
+            SECOND_START: begin SCL <= 1'b0; SDA <= 1'b1; State <= State + 1; end  
             8'd76: begin SCL <= 1'b1; State <= State + 1; end  
             8'd77: begin SCL <= 1'b1; SDA <= 1'b0; State <= State + 1; end
+            8'd78: begin SCL <= 1'b0; State <= State + 1; end
             //**************************************************
             //Transmit Sensor Address / Read
             //**************************************************  
-            8'd78: begin SCL <= 1'b0; State <= State + 1; end  
             8'd79: begin SCL <= 1'b0; SDA <= SAD[6]; State <= State + 1; end  
             8'd80: begin SCL <= 1'b1; State <= State + 1; end  
             8'd81: begin SCL <= 1'b1; State <= State + 1; end
@@ -216,11 +271,11 @@ module I2C_Transmit(
             8'd111: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end  
             8'd112: begin SCL <= 1'b1; State <= State + 1; end
             8'd113: begin SCL <= 1'b1; ACK_bit <= SDA; State <= State + 1; end
+            8'd114: begin SCL <= 1'b0; State <= State + 1; end 
             //**************************************************
             //Receive Register Data
             //**************************************************  
-            READ_START: begin SCL <= 1'b0; State <= State + 1; end  
-            8'd115: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end  
+            READ_START: begin SCL <= 1'b0; SDA <= 1'bz; State <= State + 1; end  
             8'd116: begin SCL <= 1'b1; State <= State + 1; end
             8'd117: begin SCL <= 1'b1; data[8 * byteCountReg - 1] <= SDA; State <= State + 1; end  
             8'd118: begin SCL <= 1'b0; State <= State + 1; end
@@ -251,22 +306,22 @@ module I2C_Transmit(
             8'd143: begin SCL <= 1'b0; State <= State + 1; end
             8'd144: begin SCL <= 1'b1; State <= State + 1; end
             8'd145: begin SCL <= 1'b1; data[8 * byteCountReg - 8] <= SDA; State <= State + 1; end
-            8'd146: begin SCL <= 1'b0; State <= State + 1; end  
-            8'd147: begin SCL <= 1'b0; SDA <= 1'b0; State <= State + 1; end  
+            8'd146: begin SCL <= 1'b0; if(byteCountReg == 1) State <= NACK; else State <= State + 1; byteCountReg <= byteCountReg - 1; end  
+            8'd147: begin SCL <= 1'b0; SDA <= 1'b0; State <= State + 1; end  //Hard coded MACK
             8'd148: begin SCL <= 1'b1; State <= State + 1; end  
             8'd149: begin SCL <= 1'b1; State <= State + 1; end
-            8'd150: begin SCL <= 1'b0; State <= State + 1; byteCountReg <= byteCountReg - 1; if(byteCountReg == 1) State <= STOP_CONDITION_1; else State <= READ_START; end                          
+            8'd150: begin SCL <= 1'b0; State <= READ_START; end                          
             //**************************************************
             //Master NACK
             //**************************************************  
-            STOP_CONDITION_1: begin SCL <= 1'b0; SDA <= 1'b1; State <= State + 1; end  
+            NACK: begin SCL <= 1'b0; SDA <= 1'b1; State <= State + 1; end  
             8'd152: begin SCL <= 1'b1; State <= State + 1; end 
             8'd153: begin SCL <= 1'b1; State <= State + 1; end 
             8'd154: begin SCL <= 1'b0; State <= State + 1; end  
             //**************************************************
             //Stop Condition
             //**************************************************    
-            8'd155: begin SCL <= 1'b0; SDA <= 1'b0; State <= State + 1; end  
+            STOP_CONDITION: begin SCL <= 1'b0; SDA <= 1'b0; State <= State + 1; end  
             8'd156: begin SCL <= 1'b1; State <= State + 1; end  
             8'd157: begin SCL <= 1'b1; SDA <= 1'b1; State <= STATE_INIT; end
             //**************************************************
