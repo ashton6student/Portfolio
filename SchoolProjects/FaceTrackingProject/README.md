@@ -2,7 +2,6 @@ THIS IS CURRENTLY A WORK IN PROGRESS, AS THE CLASS THIS IS BEING DONE FOR IS YET
 
 Introduction:
 This is the final project for ECE437 Sensors and Instrumentation, in which we use a camera, stepper motor, and IMU to create a face tracking camera system.
-The camera, in conjunction with the OpenCV python library, tracks your face and turns the PCB via the stepper motor and the IMU for position detection to move the PCB to track your face.
 In order to do this we created firmware in verilog running on an Opal Kelly FPGA and python code running on a windows desktop. 
 This FPGA board is attached to a custom PCB containing the camera, IMU, stepper motor, amongst other sensors in which we interface with via various communcation protocols.
 Note: the PCB Schematic, related images, and relevant sensor data sheets are provided in the same folder this README is contained in.
@@ -24,4 +23,4 @@ As stated, this project is a work in progress as the class has yet to complete, 
 As such, the provided python software files is not the final project code, but the python code used in previous labs to control the specific components that will be used in the final project.
 The python code provided is as follows: PMOD_ControllerPY.py, I2C_ControllerPY.py, SPI_ControllerPY.py.
 These files are self explanatory, as these are the files that are tasked with communcating with the FPGA to control the PMOD, I2C, and SPI state machines verilog files.
-Note: they may contain specific usage meant for the labs, so don't attempt to interpret this code with reference to this project goal.
+Note: they may contain specific usage meant for the labs, so don't attempt to interpret this code with reference to this project goal. 
