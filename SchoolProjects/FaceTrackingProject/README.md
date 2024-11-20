@@ -1,7 +1,8 @@
 THIS IS CURRENTLY A WORK IN PROGRESS, AS THE CLASS THIS IS BEING DONE FOR IS YET TO COMPLETE.
 
 Introduction:
-This is the final project for ECE437 Sensors and Instrumentation, in which we use a camera, stepper motor, and IMU to create a face tracking camera system.
+This is the final project for ECE437 Sensors and Instrumentation, in which we use a camera and a stepper motor to create a face tracking camera system.
+Along with this, we were also tasked with measuring our systems position with an IMU.
 In order to do this we created firmware in verilog running on an Opal Kelly FPGA and python code running on a windows desktop. 
 This FPGA board is attached to a custom PCB containing the camera, IMU, stepper motor, amongst other sensors in which we interface with via various communcation protocols.
 Note: the PCB Schematic, related images, and relevant sensor data sheets are provided in the same folder this README is contained in.
