@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="./Final Project Images/GloveControllerTop.jpg" alt="Glove Controller Top" width="45%"/>
+    <img src="./Final Project Images/PCB.jpg" alt="PCB" width="45%"/>
+</p>
 In this project, I designed a PCB board using EasyEDA Pro for use in the LucidGlovesV5 open-source project. The image of the PCB board as well as the circuit diagram is included in this folder. I then soldered said components to the PCB board. Finally, I designed and 3D printed a housing for said PCB using Inventor, allowing for it to be powered by batteries and to be mounted on my arm. The CAD files as well as images of the 3D printed housing is included in this folder.
 The LucidGloves open-source project is a virtual reality glove project, meant to be compatible with most modern VR systems like the Meta Quest and Valve Index, as well as in Unity for one's own VR-related development. V5 of this project includes finger tracking using hall effect sensors, as well as servo motors for haptic feedback. 
 I mainly did this project as a way to develop my engineering soft skills while also exploring a topic that interests me, virtual reality. I developed skills such as PCB design and ordering, 3D modeling, and 3D printing.
