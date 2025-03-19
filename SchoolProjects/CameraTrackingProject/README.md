@@ -1,4 +1,5 @@
-[![Watch the video](https://vumbnail.com/1067457196.jpg)](https://vimeo.com/1067457196/bd78a17d24?ts=0&share=copy)<br>
+<a href="https://vimeo.com/1067457196/bd78a17d24?ts=0&share=copy" target="_blank">Watch the Demo Here!</a>
+
 Introduction:
 This is the final project for ECE437 Sensors and Instrumentation, in which we use a camera and a stepper motor to create a face tracking camera system.
 Along with this, we were also tasked with measuring our systems position with an IMU.
